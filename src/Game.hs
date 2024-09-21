@@ -1,8 +1,10 @@
 module Game where
 
-import Data.Char
-
 import Util
+
+------------------------------
+-- Type Definitions
+------------------------------
 
 data Color = Black | White
     deriving(Eq, Show)
@@ -10,8 +12,91 @@ data PieceType = Pawn | Rook | Knight | Bishop | Queen | King
     deriving(Eq, Show)
 data Piece = Piece Color PieceType
     deriving(Eq, Show)
+data BoardSquare = Empty | Occ Piece
+-- This could probably be refactored into a Seq or something to improve performance
+newtype Board = Board [[BoardSquare]]
+data GameState = Normal | Check | Checkmate | Stalemate
+data Game = Game Board Color GameState
 
--- Define the pieces
+pieceColor :: Piece -> Color
+pieceColor (Piece c _) = c
+
+toggleColor :: Color -> Color
+toggleColor Black = White
+toggleColor White = Black
+
+pieceType :: Piece -> PieceType
+pieceType (Piece _ t) = t
+
+getBoard :: Game -> Board
+getBoard (Game b _ _) = b
+
+getTurn :: Game -> Color
+getTurn (Game _ c _) = c
+
+getState :: Game -> GameState
+getState (Game _ _ state) = state
+
+gameOver :: Game -> Bool
+gameOver (Game _ _ state) = case state of
+    Checkmate -> True
+    Stalemate -> True
+    _ -> False
+
+boardAt :: Board -> Position -> Maybe Piece
+boardAt (Board board) (Vec2 col row) = case board !! row !! col of
+    Empty -> Nothing
+    Occ p -> Just p
+
+setBoard :: Board -> Position -> BoardSquare -> Board
+setBoard (Board b) pos newSquare = Board $ 
+    map (\(rowIndex, row) -> 
+        map (\(colIndex, oldSquare) ->
+            if Vec2 colIndex rowIndex == pos
+                then newSquare
+                else oldSquare
+            ) (enumerate row)
+        ) (enumerate b)
+
+movePiece :: Board -> Position -> Position -> Board
+movePiece board p1 p2 =
+    case boardAt board p1 of
+        Just piece -> setBoard (setBoard board p2 (Occ piece)) p1 Empty
+        Nothing -> board
+
+
+-- Helper function that prepends the pieces in a row with their locations to a
+-- list of pieces and locations.
+piecesInRow :: Int -> [BoardSquare] -> [(Piece, Position)] -> [(Piece, Position)]
+piecesInRow rowNum row startingPieces =
+    foldl 
+        (\pieces (colNum, square) -> case square of
+            Occ piece -> (piece, Vec2 colNum rowNum):pieces
+            Empty -> pieces)
+        startingPieces
+        (enumerate row)
+
+allPieces :: Board -> [(Piece, Position)]
+allPieces (Board board) =
+    foldl (\pieces (rowNum, row) -> piecesInRow rowNum row pieces)
+        []
+        (enumerate board)
+
+-- Looks through all the pieces and return the location of the first
+-- one that matches
+pieceLocation :: Board -> Piece -> Maybe Position
+pieceLocation board piece = 
+    case filter ((== piece) . fst) (allPieces board) of
+        ((_, pos):_) -> Just pos
+        [] -> Nothing
+
+colorPieceLocations :: Board -> Color -> [Position]
+colorPieceLocations board color = map snd $ filter ((== color) . pieceColor . fst) $ allPieces board
+
+------------------------------
+-- Constant Definitions
+------------------------------
+
 bp :: Piece
 bp = Piece Black Pawn
 br :: Piece
@@ -37,24 +122,6 @@ wq = Piece White Queen
 wk :: Piece
 wk = Piece White King
 
-pieceColor :: Piece -> Color
-pieceColor (Piece c _) = c
-
-pieceType :: Piece -> PieceType
-pieceType (Piece _ t) = t
-
-data BoardSquare = Empty | Occ Piece
-newtype Board = Board [[BoardSquare]]
-data Game = Game Board Color
-
-getBoard :: Game -> Board
-getBoard (Game b _) = b
-
-boardAt :: Board -> Position -> Maybe Piece
-boardAt (Board board) (Vec2 col row) = case board !! row !! col of
-    Empty -> Nothing
-    Occ p -> Just p
-
 startingBoard :: Board
 startingBoard = Board [
     map Occ [br, bn, bb, bq, bk, bb, bn, br],
@@ -67,11 +134,11 @@ startingBoard = Board [
     map Occ [wr, wn, wb, wq, wk, wb, wn, wr]]
 
 initGame :: Game
-initGame = Game startingBoard White
+initGame = Game startingBoard White Normal
 
-inBounds :: Position -> Bool
-inBounds (Vec2 x y) = let helper z = (z >= 0) && (z < 8) in
-    helper x && helper y
+------------------------------
+-- Drawing functions
+------------------------------
 
 showSquare :: BoardSquare -> String
 showSquare Empty = "."
@@ -101,27 +168,11 @@ instance Show Board where
         ++ ["  +-----------------+", "    a b c d e f g h"])
 
 instance Show Game where
-    show (Game board color) = show board ++ "Turn: " ++ show color
-
-toggleColor :: Color -> Color
-toggleColor Black = White
-toggleColor White = Black
-
-decodeCoord :: String -> Maybe Position
-decodeCoord [colChar, rowChar] = 
-    let
-        col = ord colChar - ord 'a'
-        row = ord '8' - ord rowChar
-        pos = Vec2 col row
-    in
-        if inBounds pos
-            then Just pos
-            else Nothing
-decodeCoord _ = Nothing
-
-encodeCoord :: Position -> String 
-encodeCoord pos =
-    let
-        colChar = chr $ ord 'a' + getX pos
-        rowChar = chr $ ord '8' - getY pos
-    in [colChar, rowChar]
+    show (Game board color gameState) = 
+        let turnStr = "Turn: " ++ show color
+            message = case gameState of
+                Checkmate -> "Checkmate. " ++ show (toggleColor color) ++ " wins"
+                Stalemate -> "Stalemate. Game Over"
+                Check -> turnStr ++ " (Check)"
+                Normal -> turnStr
+        in show board ++ message ++ "\n"

@@ -4,4 +4,6 @@ import Game
 import Repl
 
 main :: IO ()
-main = repl initGame
+main = do
+    putStrLn $ show initGame ++ "\nType \"help\" for commands."
+    repl initGame
