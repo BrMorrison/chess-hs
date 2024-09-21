@@ -3,7 +3,8 @@ module Movement ( validMoves
                 , inCheck
                 , inCheckmate
                 , inStalemate
-                , checkGameState) where
+                , checkGameState
+                , allPossibleMoves) where
 
 import Data.Maybe
 import Game
@@ -29,21 +30,14 @@ enemyCollisionAt b color pos = let collidePiece = boardAt b pos in
 -- Piece Direction Definitions
 ------------------------------
 
-rookDirections :: [Vec2]
-rookDirections = [Vec2 1 0, Vec2 (-1) 0, Vec2 0 (-1), Vec2 0 1]
-
-knightDirections :: [Vec2]
-knightDirections = [Vec2 1 (-2), Vec2 2 (-1), Vec2 2 1, Vec2 1 2,
+pieceDirections :: PieceType -> [Vec2]
+pieceDirections Rook = [Vec2 1 0, Vec2 (-1) 0, Vec2 0 (-1), Vec2 0 1]
+pieceDirections Knight = [Vec2 1 (-2), Vec2 2 (-1), Vec2 2 1, Vec2 1 2,
                     Vec2 (-1) (-2), Vec2 (-2) (-1), Vec2 (-2) 1, Vec2 (-1) 2]
-
-bishopDirections :: [Vec2]
-bishopDirections = [Vec2 1 1, Vec2 (-1) 1, Vec2 (-1) (-1), Vec2 1 (-1)]
-
-queenDirections :: [Vec2]
-queenDirections = rookDirections ++ bishopDirections
-
-kingDirections :: [Vec2]
-kingDirections = queenDirections
+pieceDirections Bishop = [Vec2 1 1, Vec2 (-1) 1, Vec2 (-1) (-1), Vec2 1 (-1)]
+pieceDirections Queen = pieceDirections Rook ++ pieceDirections Bishop
+pieceDirections King = pieceDirections Queen
+pieceDirections Pawn = [] -- Not used for Pawns
 
 ------------------------------
 -- Movement functions
@@ -68,16 +62,11 @@ movesToSpots dirs board c pos =
     let possibleMoves = map (|+| pos) dirs
     in filter (\p -> inBounds p && not (friendlyCollisionAt board c p)) possibleMoves
 
-rookMoves :: MoveFunc
-rookMoves = movesInDirections rookDirections
-knightMoves :: MoveFunc
-knightMoves = movesToSpots knightDirections
-bishopMoves :: MoveFunc
-bishopMoves = movesInDirections bishopDirections
-queenMoves :: MoveFunc
-queenMoves = movesInDirections queenDirections
-kingMoves :: MoveFunc
-kingMoves = movesToSpots kingDirections
+pieceMoveFunc :: PieceType -> MoveFunc
+pieceMoveFunc p 
+    | p == Pawn = pawnMoves
+    | p == King || p == Knight = movesToSpots (pieceDirections p)
+    | otherwise = movesInDirections (pieceDirections p)
 
 -- Pawn movement is complicated, so it has to be handled separately.
 pawnMoves :: MoveFunc
@@ -96,12 +85,7 @@ pawnMoves board color pos =
 validMoves' :: Board -> Position -> [Position]
 validMoves' board pos = case boardAt board pos of
     Nothing -> []
-    Just (Piece c Pawn)   -> pawnMoves board c pos
-    Just (Piece c Rook)   -> rookMoves board c pos
-    Just (Piece c Knight) -> knightMoves board c pos
-    Just (Piece c Bishop) -> bishopMoves board c pos
-    Just (Piece c Queen)  -> queenMoves board c pos
-    Just (Piece c King)   -> kingMoves board c pos
+    Just (Piece c p) -> (pieceMoveFunc p) board c pos
 
 validMoves :: Board -> Position -> [Position]
 validMoves board pos = case boardAt board pos of
@@ -109,11 +93,11 @@ validMoves board pos = case boardAt board pos of
     Just piece ->
         let color = pieceColor piece
             baseMoves = validMoves' board pos
-            avoidsCheck newPos = not $ inCheck color (movePiece board pos newPos)
+            avoidsCheck newPos = not $ inCheck color (movePiece (Move pos newPos) board)
         in filter avoidsCheck baseMoves
 
-moveValid :: Color -> Board -> Position -> Position -> Bool
-moveValid color board p1 p2 = 
+moveValid :: Color -> Board -> Move -> Bool
+moveValid color board (Move p1 p2) = 
     let rightColor = case boardAt board p1 of
             Just piece -> pieceColor piece == color
             Nothing -> False
@@ -121,11 +105,14 @@ moveValid color board p1 p2 =
 
 
 -- enumerate all possible next board states for a given color
-allPossibleMoves :: Color -> Board -> [Board]
+allPossibleMoves :: Color -> Board -> [Move]
 allPossibleMoves color board =
     let piecesLocations = colorPieceLocations board color
-        boardsForPiece loc = map (movePiece board loc) (validMoves board loc)
-    in foldl (\boards loc -> boards ++ boardsForPiece loc) [] piecesLocations
+        movesForPiece loc = map (Move loc) (validMoves board loc)
+    in foldl (\moves loc -> moves ++ movesForPiece loc) [] piecesLocations
+
+possibleNextBoards :: Color -> Board -> [Board]
+possibleNextBoards color board = map (`movePiece` board) (allPossibleMoves color board)
 
 ------------------------------
 -- Check Code
@@ -140,7 +127,7 @@ inCheck color board =
     in elem kingPos enemyMoves
 
 inCheckmate :: Color -> Board -> Bool
-inCheckmate color board = inCheck color board && all (inCheck color) (allPossibleMoves color board)
+inCheckmate color board = inCheck color board && all (inCheck color) (possibleNextBoards color board)
 
 inStalemate :: Color -> Board -> Bool
 inStalemate color board = case allPossibleMoves color board of

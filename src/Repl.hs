@@ -8,16 +8,17 @@ import Control.Monad.Trans.State
 import Game
 import Util
 import Movement
+import Minimax
 
 ------------------------------------------
 -- Movement Code
 ------------------------------------------
 
-makeMove :: Position -> Position -> State Game ()
-makeMove p1 p2 = do 
+makeMove :: Move -> State Game ()
+makeMove move = do 
     (Game board color _) <- get
     let nextColor = toggleColor color
-        nextBoard = movePiece board p1 p2
+        nextBoard = movePiece move board
         nextGameState = checkGameState nextColor nextBoard
         in void (put (Game nextBoard nextColor nextGameState))
 
@@ -25,11 +26,11 @@ makeMove p1 p2 = do
 -- REPL Code
 ------------------------------------------
 
-handleMove' :: Position -> Position -> State Game String
-handleMove' p1 p2 = do
+handleMove' :: Move -> State Game String
+handleMove' move = do
         game <- get
-        if moveValid (getTurn game) (getBoard game) p1 p2
-            then (makeMove p1 p2 >> get) <&> show 
+        if moveValid (getTurn game) (getBoard game) move
+            then (makeMove move >> get) <&> show 
             else return "Move not valid"
 
 handleMove :: [String] -> State Game String
@@ -37,8 +38,15 @@ handleMove [arg1, arg2] =
     case (decodeCoord arg1, decodeCoord arg2) of
         (Nothing, _) -> state ("Invalid coordinate: " ++ arg1,)
         (_, Nothing) -> state ("Invalid coordinate: " ++ arg2,)
-        (Just p1, Just p2) -> handleMove' p1 p2
+        (Just p1, Just p2) -> handleMove' (Move p1 p2)
 handleMove _ = state ("Usage: move <pos1> <pos2>\n  (ex: move a1 b2)", )
+
+handleRobot :: State Game String
+handleRobot = do
+    game <- get
+    case miniMax (getTurn game) (getBoard game) of
+        (Nothing, _) -> state ("The AI couldn't find any valid moves. Seems like a bug :(",)
+        (Just move, _) -> handleMove' move
 
 
 printOptions' :: Position -> State Game String
@@ -65,6 +73,7 @@ helpMsg = unlines
     , "  move <c1> <c2>: Try to move the piece from <c1> to <c2>"
     , "  options <c>:    Print the move options for the piece at <c>"
     , "  help:           Print this help message"
+    , "  robot:          Let the chess AI make a move"
     , "  quit:           End the game."]
 
 eval' :: [String] -> State Game String
@@ -72,6 +81,7 @@ eval' ("print": _) = get <&> show
 eval' ("move": args) = handleMove args
 eval' ("options": args) = printOptions args
 eval' ("help": _) = return helpMsg
+eval' ("robot": _) = handleRobot
 eval' (cmd:_) = return $ "Unrecognized command: " ++ cmd
 eval' [] = return ""
 

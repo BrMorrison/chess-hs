@@ -17,6 +17,7 @@ data BoardSquare = Empty | Occ Piece
 newtype Board = Board [[BoardSquare]]
 data GameState = Normal | Check | Checkmate | Stalemate
 data Game = Game Board Color GameState
+data Move = Move Position Position
 
 pieceColor :: Piece -> Color
 pieceColor (Piece c _) = c
@@ -58,8 +59,8 @@ setBoard (Board b) pos newSquare = Board $
             ) (enumerate row)
         ) (enumerate b)
 
-movePiece :: Board -> Position -> Position -> Board
-movePiece board p1 p2 =
+movePiece :: Move -> Board -> Board
+movePiece (Move p1 p2) board =
     case boardAt board p1 of
         Just piece -> setBoard (setBoard board p2 (Occ piece)) p1 Empty
         Nothing -> board
