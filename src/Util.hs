@@ -16,6 +16,12 @@ getX (Vec2 x _) = x
 getY :: Vec2 -> Int
 getY (Vec2 _ y) = y
 
+distance :: Vec2 -> Vec2 -> Double
+distance (Vec2 x1 y1) (Vec2 x2 y2) = 
+    let a = (fromIntegral . abs) (x2 - x1)
+        b = (fromIntegral . abs) (y2 - y1)
+    in sqrt $ (a * a) + (b * b)
+
 enumerate :: Integral a => [b] -> [(a, b)]
 enumerate = zip [0..]
 

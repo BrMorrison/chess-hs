@@ -85,7 +85,7 @@ pawnMoves board color pos =
 validMoves' :: Board -> Position -> [Position]
 validMoves' board pos = case boardAt board pos of
     Nothing -> []
-    Just (Piece c p) -> (pieceMoveFunc p) board c pos
+    Just (Piece c p) -> pieceMoveFunc p board c pos
 
 validMoves :: Board -> Position -> [Position]
 validMoves board pos = case boardAt board pos of
@@ -97,11 +97,11 @@ validMoves board pos = case boardAt board pos of
         in filter avoidsCheck baseMoves
 
 moveValid :: Color -> Board -> Move -> Bool
-moveValid color board (Move p1 p2) = 
-    let rightColor = case boardAt board p1 of
+moveValid color board (Move pStart pEnd) = 
+    let rightColor = case boardAt board pStart of
             Just piece -> pieceColor piece == color
             Nothing -> False
-        in rightColor && elem p2 (validMoves board p1)
+        in rightColor && elem pEnd (validMoves board pStart)
 
 
 -- enumerate all possible next board states for a given color

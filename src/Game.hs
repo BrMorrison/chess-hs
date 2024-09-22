@@ -16,8 +16,8 @@ data BoardSquare = Empty | Occ Piece
 -- This could probably be refactored into a Seq or something to improve performance
 newtype Board = Board [[BoardSquare]]
 data GameState = Normal | Check | Checkmate | Stalemate
-data Game = Game Board Color GameState
 data Move = Move Position Position
+data Game = Game Board Color GameState
 
 pieceColor :: Piece -> Color
 pieceColor (Piece c _) = c
@@ -30,10 +30,16 @@ pieceType :: Piece -> PieceType
 pieceType (Piece _ t) = t
 
 getBoard :: Game -> Board
-getBoard (Game b _ _) = b
+getBoard (Game b _ _ ) = b
 
 getTurn :: Game -> Color
-getTurn (Game _ c _) = c
+getTurn (Game _ c _ ) = c
+
+moveOrig :: Move -> Position
+moveOrig (Move p _) = p
+
+moveDest :: Move -> Position
+moveDest (Move _  p) = p
 
 getState :: Game -> GameState
 getState (Game _ _ state) = state
@@ -59,12 +65,20 @@ setBoard (Board b) pos newSquare = Board $
             ) (enumerate row)
         ) (enumerate b)
 
-movePiece :: Move -> Board -> Board
-movePiece (Move p1 p2) board =
-    case boardAt board p1 of
-        Just piece -> setBoard (setBoard board p2 (Occ piece)) p1 Empty
-        Nothing -> board
+movePiece' :: Piece -> Move -> Board -> Board
+movePiece' piece (Move p1 p2) board = setBoard (setBoard board p2 (Occ piece)) p1 Empty
 
+movePiece :: Move -> Board -> Board
+movePiece move board =
+    case boardAt board (moveOrig move) of
+        Just (Piece color Pawn) ->
+            -- If a pawn reached the end of the board, promote it.
+            case (color, (getY . moveDest) move) of
+                (Black, 7) -> movePiece' (Piece color Queen) move board
+                (White, 0) -> movePiece' (Piece color Queen) move board
+                _ -> movePiece' (Piece color Pawn) move board
+        Just piece -> movePiece' piece move board
+        Nothing -> board
 
 -- Helper function that prepends the pieces in a row with their locations to a
 -- list of pieces and locations.

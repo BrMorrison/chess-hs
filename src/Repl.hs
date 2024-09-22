@@ -46,7 +46,9 @@ handleRobot = do
     game <- get
     case miniMax (getTurn game) (getBoard game) of
         (Nothing, _) -> state ("The AI couldn't find any valid moves. Seems like a bug :(",)
-        (Just move, _) -> handleMove' move
+        (Just move, score) -> do
+            msg <- handleMove' move
+            return $ msg ++ "AI Calculated score: " ++ show score
 
 
 printOptions' :: Position -> State Game String
@@ -60,6 +62,19 @@ printOptions [coord] =
         Nothing -> return $ "Invalid coordinate: " ++ coord
         Just pos -> printOptions' pos
 printOptions _ = return "Usage: options <pos>"
+
+handleShowScore :: State Game String
+handleShowScore = do
+    game <- get
+    let board = getBoard game
+        mScore = materialScore board
+        pScore = positionScore board
+        score = scoreBoard board
+        message = unlines [ "  --- Scoring ---"
+                          , "  Material: " ++ show mScore
+                          , "  Position: " ++ show pScore
+                          , "  Total:    " ++ show score]
+        in return message
 
 read' :: IO String
 read' = putStr ">"
@@ -82,6 +97,7 @@ eval' ("move": args) = handleMove args
 eval' ("options": args) = printOptions args
 eval' ("help": _) = return helpMsg
 eval' ("robot": _) = handleRobot
+eval' ("score": _) = handleShowScore
 eval' (cmd:_) = return $ "Unrecognized command: " ++ cmd
 eval' [] = return ""
 

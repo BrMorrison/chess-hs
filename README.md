@@ -9,7 +9,7 @@ I don't know very much about either, so the quality of this code is suspect.
 
 ### Missing Features
  * Castling
- * Pawn promotion
+ * Selectable pawn promotion
  * En-passant
  * Enforcement of various stalemate rules
  * Probably more
