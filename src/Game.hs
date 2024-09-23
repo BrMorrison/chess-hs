@@ -17,7 +17,17 @@ data BoardSquare = Empty | Occ Piece
 newtype Board = Board [[BoardSquare]]
 data GameState = Normal | Check | Checkmate | Stalemate
 data Move = Move Position Position
-data Game = Game Board Color GameState
+data Game = Game Board Color GameState [GameMove]
+
+data Annotation = Brilliant | Good | Bad | Blunder
+
+data GameMove = GameMove 
+    { gameMovePiece      :: PieceType
+    , gameMoveCapture    :: Bool
+    , gameMoveMove       :: Move
+    , gameMovePromotion  :: Maybe PieceType
+    , gameMoveState      :: GameState
+    , gameMoveAnnotation :: Maybe Annotation }
 
 pieceColor :: Piece -> Color
 pieceColor (Piece c _) = c
@@ -30,10 +40,23 @@ pieceType :: Piece -> PieceType
 pieceType (Piece _ t) = t
 
 getBoard :: Game -> Board
-getBoard (Game b _ _ ) = b
+getBoard (Game b _ _ _) = b
+
+commitMove :: GameMove -> Board -> GameState -> Game -> Game
+commitMove move nextBoard nextState (Game _ turn _ moves) = 
+    Game nextBoard (toggleColor turn) nextState (move:moves)
 
 getTurn :: Game -> Color
-getTurn (Game _ c _ ) = c
+getTurn (Game _ c _ _) = c
+
+getState :: Game -> GameState
+getState (Game _ _ state _) = state
+
+gameOver :: Game -> Bool
+gameOver (Game _ _ state _) = case state of
+    Checkmate -> True
+    Stalemate -> True
+    _ -> False
 
 moveOrig :: Move -> Position
 moveOrig (Move p _) = p
@@ -41,22 +64,13 @@ moveOrig (Move p _) = p
 moveDest :: Move -> Position
 moveDest (Move _  p) = p
 
-getState :: Game -> GameState
-getState (Game _ _ state) = state
-
-gameOver :: Game -> Bool
-gameOver (Game _ _ state) = case state of
-    Checkmate -> True
-    Stalemate -> True
-    _ -> False
-
 boardAt :: Board -> Position -> Maybe Piece
 boardAt (Board board) (Vec2 col row) = case board !! row !! col of
     Empty -> Nothing
     Occ p -> Just p
 
-setBoard :: Board -> Position -> BoardSquare -> Board
-setBoard (Board b) pos newSquare = Board $ 
+setBoardAt :: Board -> Position -> BoardSquare -> Board
+setBoardAt (Board b) pos newSquare = Board $ 
     map (\(rowIndex, row) -> 
         map (\(colIndex, oldSquare) ->
             if Vec2 colIndex rowIndex == pos
@@ -65,20 +79,8 @@ setBoard (Board b) pos newSquare = Board $
             ) (enumerate row)
         ) (enumerate b)
 
-movePiece' :: Piece -> Move -> Board -> Board
-movePiece' piece (Move p1 p2) board = setBoard (setBoard board p2 (Occ piece)) p1 Empty
-
-movePiece :: Move -> Board -> Board
-movePiece move board =
-    case boardAt board (moveOrig move) of
-        Just (Piece color Pawn) ->
-            -- If a pawn reached the end of the board, promote it.
-            case (color, (getY . moveDest) move) of
-                (Black, 7) -> movePiece' (Piece color Queen) move board
-                (White, 0) -> movePiece' (Piece color Queen) move board
-                _ -> movePiece' (Piece color Pawn) move board
-        Just piece -> movePiece' piece move board
-        Nothing -> board
+movePiece :: Piece -> Move -> Board -> Board
+movePiece piece (Move p1 p2) board = setBoardAt (setBoardAt board p2 (Occ piece)) p1 Empty
 
 -- Helper function that prepends the pieces in a row with their locations to a
 -- list of pieces and locations.
@@ -149,7 +151,7 @@ startingBoard = Board [
     map Occ [wr, wn, wb, wq, wk, wb, wn, wr]]
 
 initGame :: Game
-initGame = Game startingBoard White Normal
+initGame = Game startingBoard White Normal []
 
 ------------------------------
 -- Drawing functions
@@ -183,7 +185,7 @@ instance Show Board where
         ++ ["  +-----------------+", "    a b c d e f g h"])
 
 instance Show Game where
-    show (Game board color gameState) = 
+    show (Game board color gameState _) = 
         let turnStr = "Turn: " ++ show color
             message = case gameState of
                 Checkmate -> "Checkmate. " ++ show (toggleColor color) ++ " wins"

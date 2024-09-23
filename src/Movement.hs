@@ -1,10 +1,13 @@
+-- TODO: validMoves, moveValid, and allPossiblesMoves are all related.
+--       we can probably simplify down and shrink our API
 module Movement ( validMoves
                 , moveValid
                 , inCheck
                 , inCheckmate
                 , inStalemate
                 , checkGameState
-                , allPossibleMoves) where
+                , allPossibleMoves
+                , makeMove) where
 
 import Data.Maybe
 import Game
@@ -93,7 +96,7 @@ validMoves board pos = case boardAt board pos of
     Just piece ->
         let color = pieceColor piece
             baseMoves = validMoves' board pos
-            avoidsCheck newPos = not $ inCheck color (movePiece (Move pos newPos) board)
+            avoidsCheck newPos = not $ inCheck color (movePiece piece (Move pos newPos) board)
         in filter avoidsCheck baseMoves
 
 moveValid :: Color -> Board -> Move -> Bool
@@ -111,12 +114,51 @@ allPossibleMoves color board =
         movesForPiece loc = map (Move loc) (validMoves board loc)
     in foldl (\moves loc -> moves ++ movesForPiece loc) [] piecesLocations
 
-possibleNextBoards :: Color -> Board -> [Board]
-possibleNextBoards color board = map (`movePiece` board) (allPossibleMoves color board)
+possibleNextBoards :: Game -> [Board]
+possibleNextBoards game = 
+    let color = getTurn game
+        board = getBoard game
+    in map (getBoard . fromJust . (`makeMove` game)) (allPossibleMoves color board)
+
+isMovePawnPromotion :: Piece -> Move -> Bool
+isMovePawnPromotion piece move =
+    case (pieceType piece, pieceColor piece, (getY . moveDest) move) of
+        (Pawn, Black, 7) -> True
+        (Pawn, White, 0) -> True
+        _ -> False
+
+makeMove :: Move -> Game -> Maybe Game
+makeMove move game =
+    let color = getTurn game
+        nextColor = toggleColor color
+        board = getBoard game
+        destValid = moveDest move `elem` validMoves board (moveOrig move)
+        isCapture = enemyCollisionAt board color (moveOrig move)
+        moveHelper piece =
+            let isRightColor = pieceColor piece == color
+                isPromotion = isMovePawnPromotion piece move
+                nextBoard = movePiece piece move board
+                nextState = checkGameState nextColor nextBoard
+                gameMove = GameMove { gameMovePiece = pieceType piece
+                                    , gameMoveCapture = isCapture
+                                    , gameMoveMove = move
+                                    , gameMovePromotion = if isPromotion then Just Queen else Nothing
+                                    , gameMoveState = nextState
+                                    , gameMoveAnnotation = Nothing } -- TODO: Get this from minimax
+            in if isRightColor && destValid
+                then Just $ commitMove gameMove nextBoard nextState game
+                else Nothing
+    in do
+        piece <- boardAt board (moveOrig move)
+        moveHelper piece
 
 ------------------------------
 -- Check Code
 ------------------------------
+
+-- TODO: This is a temporary function while I'm refactoring
+tmpToGame :: Color -> Board -> Game
+tmpToGame color board = Game board color Normal []
 
 inCheck :: Color -> Board -> Bool
 inCheck color board =
@@ -127,7 +169,7 @@ inCheck color board =
     in elem kingPos enemyMoves
 
 inCheckmate :: Color -> Board -> Bool
-inCheckmate color board = inCheck color board && all (inCheck color) (possibleNextBoards color board)
+inCheckmate color board = inCheck color board && all (inCheck color) (possibleNextBoards (tmpToGame color board))
 
 inStalemate :: Color -> Board -> Bool
 inStalemate color board = case allPossibleMoves color board of

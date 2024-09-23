@@ -11,27 +11,15 @@ import Movement
 import Minimax
 
 ------------------------------------------
--- Movement Code
-------------------------------------------
-
-makeMove :: Move -> State Game ()
-makeMove move = do 
-    (Game board color _) <- get
-    let nextColor = toggleColor color
-        nextBoard = movePiece move board
-        nextGameState = checkGameState nextColor nextBoard
-        in void (put (Game nextBoard nextColor nextGameState))
-
-------------------------------------------
 -- REPL Code
 ------------------------------------------
 
 handleMove' :: Move -> State Game String
 handleMove' move = do
         game <- get
-        if moveValid (getTurn game) (getBoard game) move
-            then (makeMove move >> get) <&> show 
-            else return "Move not valid"
+        case makeMove move game of
+            Just game' -> put game' >> return (show game')
+            Nothing -> return "Move not valid"
 
 handleMove :: [String] -> State Game String
 handleMove [arg1, arg2] = 
@@ -44,12 +32,11 @@ handleMove _ = state ("Usage: move <pos1> <pos2>\n  (ex: move a1 b2)", )
 handleRobot :: State Game String
 handleRobot = do
     game <- get
-    case miniMax (getTurn game) (getBoard game) of
+    case miniMax game of
         (Nothing, _) -> state ("The AI couldn't find any valid moves. Seems like a bug :(",)
         (Just move, score) -> do
             msg <- handleMove' move
             return $ msg ++ "AI Calculated score: " ++ show score
-
 
 printOptions' :: Position -> State Game String
 printOptions' pos =

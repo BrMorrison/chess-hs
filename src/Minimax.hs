@@ -1,5 +1,7 @@
 module Minimax (miniMax, scoreBoard, materialScore, positionScore) where
 
+import Data.Maybe
+
 import Game
 import Movement
 import Util
@@ -75,12 +77,15 @@ getBestScore White = foldl max (-1.0)
 getBestScore Black = foldl min 1.0
 
 -- TODO: We should have this return a tree or something so that we don't need to recalculate it each time.
-miniMax' :: Int -> Color -> Board -> (Maybe Move, Double)
-miniMax' 0 _ board = (Nothing, scoreBoard board)
-miniMax' fuel color board =
-    let moves = allPossibleMoves color board
-        nextMiniMaxScore = snd . miniMax' (fuel-1) (toggleColor color)
-        moveScores = map (\move -> (move, nextMiniMaxScore (movePiece move board))) moves
+miniMax' :: Int -> Game -> (Maybe Move, Double)
+miniMax' 0 game = (Nothing, scoreBoard (getBoard game))
+miniMax' fuel game =
+    let color = getTurn game
+        board = getBoard game
+        moves = allPossibleMoves color board
+        nextGame move = fromJust (makeMove move game)
+        nextMiniMaxScore = snd . miniMax' (fuel-1)
+        moveScores = map (\move -> (move, nextMiniMaxScore (nextGame move))) moves
         bestScore = getBestScore color (map snd moveScores)
         -- Ideally, we'd pick one of the valid moves randomly instead of just grabbing the first one
         bestMove = fst . head $ filter ((== bestScore) . snd) moveScores
@@ -88,5 +93,5 @@ miniMax' fuel color board =
         [] -> (Nothing, scoreBoard board) -- Handle the case where we don't have moves available
         _ -> (Just bestMove, bestScore * 0.999) -- The * 0.999 is so that we favor shorter trees
 
-miniMax :: Color -> Board -> (Maybe Move, Double)
+miniMax :: Game -> (Maybe Move, Double)
 miniMax = miniMax' 3 
