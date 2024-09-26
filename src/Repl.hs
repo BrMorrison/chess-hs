@@ -1,7 +1,6 @@
 module Repl where
 
 import Control.Monad
-import Data.Functor
 import System.IO
 import Control.Monad.Trans.State
 
@@ -18,7 +17,7 @@ handleMove' :: Move -> State Game String
 handleMove' move = do
         game <- get
         case makeMove move game of
-            Just game' -> put game' >> return (show game')
+            Just game' -> put game' >> return ""
             Nothing -> return "Move not valid"
 
 handleMove :: [String] -> State Game String
@@ -71,15 +70,14 @@ read' = putStr ">"
 helpMsg :: String
 helpMsg = unlines
     [ "Commands"
-    , "  print:          Show the game board"
     , "  move <c1> <c2>: Try to move the piece from <c1> to <c2>"
     , "  options <c>:    Print the move options for the piece at <c>"
     , "  help:           Print this help message"
     , "  robot:          Let the chess AI make a move"
+    , "  score:          Print the AI's scoring data for the board."
     , "  quit:           End the game."]
 
 eval' :: [String] -> State Game String
-eval' ("print": _) = get <&> show
 eval' ("move": args) = handleMove args
 eval' ("options": args) = printOptions args
 eval' ("help": _) = return helpMsg
@@ -96,4 +94,4 @@ repl game =
             input <- read'
             unless (input == "quit")
                     (let (msg, game') = runState (eval' (words input)) game
-                    in putStrLn msg >> repl game')
+                    in print game' >> putStrLn msg >> repl game')

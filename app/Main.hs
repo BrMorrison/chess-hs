@@ -1,9 +1,6 @@
 module Main where
 
-import Game
-import Repl
+import Ui
 
 main :: IO ()
-main = do
-    putStrLn $ show initGame ++ "\nType \"help\" for commands."
-    repl initGame
+main = uiMain
