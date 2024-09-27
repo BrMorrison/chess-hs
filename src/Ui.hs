@@ -30,12 +30,12 @@ makeLenses ''St
 draw :: St -> [Widget Name]
 draw st = [ui]
     where
-        e = E.renderEditor (str . unlines) False (_stInput st)
+        e = E.renderEditor (str . unlines) True (_stInput st)
         ui = center $
-            str (show (st ^. stGame)) <=>
-            str " " <=>
-            str (st ^. stMsg) <=>
-            (str ">" <+> hLimit 30 e)
+            hCenter ((str . show) (st ^. stGame)) <=>
+            hCenter (str " " <=>
+            hLimit 75 (str (st ^. stMsg)) <=>
+            (str ">" <+> hLimit 74 e))
 
 handleEvent :: BrickEvent Name e -> EventM Name St ()
 handleEvent (VtyEvent (V.EvKey V.KEsc [])) = halt
@@ -54,8 +54,7 @@ handleEvent (VtyEvent (V.EvKey V.KEnter [])) = do
 handleEvent ev = zoom stInput $ E.handleEditorEvent ev
 
 theMap :: AttrMap
-theMap = attrMap V.defAttr
-    [ (mempty, V.white `on` V.black) ]
+theMap = attrMap V.defAttr []
 
 initState :: St
 initState = St { _stGame = initGame
@@ -66,7 +65,7 @@ initState = St { _stGame = initGame
 app :: App St e Name
 app = App { appDraw = draw
           , appHandleEvent = handleEvent
-          , appChooseCursor = \_ _ -> Nothing
+          , appChooseCursor = showFirstCursor
           , appStartEvent = return ()
           , appAttrMap = const theMap
           }
