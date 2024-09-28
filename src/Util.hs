@@ -2,10 +2,8 @@ module Util where
 
 import Data.Char
 
-data Vec2 = Vec2 Int Int
-    deriving(Eq, Show)
+import Types
 
-type Position = Vec2
 (|+|) :: Vec2 -> Vec2 -> Vec2
 (Vec2 x1 y1) |+| (Vec2 x2 y2) = Vec2 (x1 + x2) (y1 + y2)
 (|-|) :: Vec2 -> Vec2 -> Vec2

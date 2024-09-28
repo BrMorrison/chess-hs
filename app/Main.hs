@@ -1,6 +1,6 @@
 module Main where
 
-import Ui
+import Frontend.Ui
 
 main :: IO ()
 main = uiMain

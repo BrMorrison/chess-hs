@@ -1,10 +1,17 @@
-module Minimax (miniMax, scoreBoard, materialScore, positionScore) where
+module Backend.Minimax
+    ( miniMax
+    , scoreBoard
+    , materialScore
+    , positionScore
+    ) where
 
 import Data.Maybe
 
-import Game
-import Movement
+import Types
 import Util
+
+import Backend.Game
+import Backend.Movement
 
 materialWorth' :: PieceType -> Int
 materialWorth' Pawn = 1
@@ -78,10 +85,10 @@ getBestScore Black = foldl min 1.0
 
 -- TODO: We should have this return a tree or something so that we don't need to recalculate it each time.
 miniMax' :: Int -> Game -> (Maybe Move, Double)
-miniMax' 0 game = (Nothing, scoreBoard (getBoard game))
+miniMax' 0 game = (Nothing, scoreBoard (gameBoard game))
 miniMax' fuel game =
-    let color = getTurn game
-        board = getBoard game
+    let color = gameTurn game
+        board = gameBoard game
         moves = allPossibleMoves color board
         nextGame move = fromJust (makeMove move game)
         nextMiniMaxScore = snd . miniMax' (fuel-1)

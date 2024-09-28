@@ -1,17 +1,22 @@
--- TODO: validMoves, moveValid, and allPossiblesMoves are all related.
+-- TODO: validMovesAt, moveValid, and allPossiblesMoves are all related.
 --       we can probably simplify down and shrink our API
-module Movement ( validMoves
-                , moveValid
-                , inCheck
-                , inCheckmate
-                , inStalemate
-                , checkGameState
-                , allPossibleMoves
-                , makeMove) where
+module Backend.Movement
+    ( validMovesAt
+    , moveValid
+    , inCheck
+    , inCheckmate
+    , inStalemate
+    , checkGameState
+    , allPossibleMoves
+    , makeMove
+    ) where
 
 import Data.Maybe
-import Game
+
+import Types
 import Util
+
+import Backend.Game
 
 ------------------------------
 -- Helpers
@@ -85,17 +90,17 @@ pawnMoves board color pos =
         validCaptureOptions = filter (\p -> inBounds p && enemyCollisionAt board color p) baseCaptureOptions
     in validMoveOptions ++ validCaptureOptions
 
-validMoves' :: Board -> Position -> [Position]
-validMoves' board pos = case boardAt board pos of
+validMovesAt' :: Board -> Position -> [Position]
+validMovesAt' board pos = case boardAt board pos of
     Nothing -> []
     Just (Piece c p) -> pieceMoveFunc p board c pos
 
-validMoves :: Board -> Position -> [Position]
-validMoves board pos = case boardAt board pos of
+validMovesAt :: Board -> Position -> [Position]
+validMovesAt board pos = case boardAt board pos of
     Nothing -> []
     Just piece ->
         let color = pieceColor piece
-            baseMoves = validMoves' board pos
+            baseMoves = validMovesAt' board pos
             avoidsCheck newPos = not $ inCheck color (movePiece piece (Move pos newPos) board)
         in filter avoidsCheck baseMoves
 
@@ -104,21 +109,21 @@ moveValid color board (Move pStart pEnd) =
     let rightColor = case boardAt board pStart of
             Just piece -> pieceColor piece == color
             Nothing -> False
-        in rightColor && elem pEnd (validMoves board pStart)
+        in rightColor && elem pEnd (validMovesAt board pStart)
 
 
 -- enumerate all possible next board states for a given color
 allPossibleMoves :: Color -> Board -> [Move]
 allPossibleMoves color board =
     let piecesLocations = colorPieceLocations board color
-        movesForPiece loc = map (Move loc) (validMoves board loc)
+        movesForPiece loc = map (Move loc) (validMovesAt board loc)
     in foldl (\moves loc -> moves ++ movesForPiece loc) [] piecesLocations
 
 possibleNextBoards :: Game -> [Board]
 possibleNextBoards game = 
-    let color = getTurn game
-        board = getBoard game
-    in map (getBoard . fromJust . (`makeMove` game)) (allPossibleMoves color board)
+    let color = gameTurn game
+        board = gameBoard game
+    in map (gameBoard . fromJust . (`makeMove` game)) (allPossibleMoves color board)
 
 isMovePawnPromotion :: Piece -> Move -> Bool
 isMovePawnPromotion piece move =
@@ -129,10 +134,10 @@ isMovePawnPromotion piece move =
 
 makeMove :: Move -> Game -> Maybe Game
 makeMove move game =
-    let color = getTurn game
+    let color = gameTurn game
         nextColor = toggleColor color
-        board = getBoard game
-        destValid = moveDest move `elem` validMoves board (moveOrig move)
+        board = gameBoard game
+        destValid = moveDest move `elem` validMovesAt board (moveOrig move)
         isCapture = enemyCollisionAt board color (moveOrig move)
         moveHelper piece =
             let isRightColor = pieceColor piece == color
@@ -164,8 +169,8 @@ inCheck :: Color -> Board -> Bool
 inCheck color board =
     let kingPos = fromJust $ pieceLocation board (Piece color King)
         enemyPieceLocations = colorPieceLocations board (toggleColor color)
-        -- Note, we use validMoves' because it doesn't include the check check.
-        enemyMoves = foldl (\moves pos -> moves ++ validMoves' board pos) [] enemyPieceLocations
+        -- Note, we use validMovesAt' because it doesn't include the check check.
+        enemyMoves = foldl (\moves pos -> moves ++ validMovesAt' board pos) [] enemyPieceLocations
     in elem kingPos enemyMoves
 
 inCheckmate :: Color -> Board -> Bool
