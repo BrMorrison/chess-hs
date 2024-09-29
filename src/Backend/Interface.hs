@@ -22,8 +22,9 @@ getValidMoves game = allPossibleMoves (gameTurn game) (gameBoard game)
 -- makeMove :: Move -> Game -> Maybe Game
 -- makeMove move game
 
--- getPastMoves :: Game -> [GameMove]
--- 
+getPastMoves :: Game -> [GameMove]
+getPastMoves = gameMoves
+ 
 -- gameProbability :: ChessGame -> Double
 
 robotMove :: Game -> Game

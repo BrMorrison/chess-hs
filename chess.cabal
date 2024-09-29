@@ -83,6 +83,7 @@ executable chess
                     , vty >= 6.0
                     , vty-unix
                     , microlens-platform
+                    , text
 
 
     -- Directories containing source files.

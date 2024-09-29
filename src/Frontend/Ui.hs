@@ -7,14 +7,17 @@ module Frontend.Ui (uiMain) where
 
 import Brick
 import Brick.Widgets.Center
+import Brick.Widgets.Border
+import Brick.Widgets.Table
 import qualified Brick.Widgets.Edit as E
 
 import qualified Graphics.Vty as V
 import Lens.Micro.Platform
 import Control.Monad.Trans.State (runState)
+import Data.Text (Text)
 
 import Types
-import Frontend.Client (evalCmd, drawGame)
+import Frontend.Client (evalCmd)
 import Backend.Interface (newGame)
 
 newtype Name = Name ()
@@ -26,15 +29,23 @@ data St = St { _stGame :: Game
              }
 makeLenses ''St
 
+drawEditor :: Int -> St -> Widget Name
+drawEditor width st = 
+    let e = E.renderEditor (str . unlines) True (st ^. stInput)
+    in (str ">" <+> hLimit (width-1) e)
+
+drawMessage :: Int -> St -> Widget Name
+drawMessage width st = hLimit width $ vBox [fill ' ', (str (st ^. stMsg))]
+
 draw :: St -> [Widget Name]
 draw st = [ui]
     where
-        e = E.renderEditor (str . unlines) True (_stInput st)
-        ui = center $
-            hCenter ((str . drawGame) (st ^. stGame)) <=>
-            hCenter (str " " <=>
-            hLimit 75 (str (st ^. stMsg)) <=>
-            (str ">" <+> hLimit 74 e))
+        widgetEffects = hCenter . border -- Include the border for debugging
+        textArea width = vLimit 10 (drawMessage width st
+            <=> drawEditor width st)
+        ui = center $ widgetEffects (drawFancyBoard st)
+            <=> str " " 
+            <=> widgetEffects (textArea 75)
 
 -- Send the commands to the editor that should clear it
 -- Note: I don't understand lenses well enough to really get how this works.
@@ -86,3 +97,75 @@ uiMain :: IO ()
 uiMain = do
     _ <- defaultMain app initState
     return ()
+
+-----------------------------------
+-- Code for drawing Chess Boards
+-----------------------------------
+drawSquare :: BoardSquare -> Text
+drawSquare Empty = "   "
+drawSquare (Occ (Piece c t)) = case (c, t) of
+    (Black, Pawn)   -> " ♟ "
+    (Black, Rook)   -> " ♜ "
+    (Black, Knight) -> " ♞ "
+    (Black, Bishop) -> " ♝ "
+    (Black, Queen)  -> " ♛ "
+    (Black, King)   -> " ♚ "
+    (White, Pawn)   -> " ♙ "
+    (White, Rook)   -> " ♖ "
+    (White, Knight) -> " ♘ "
+    (White, Bishop) -> " ♗ "
+    (White, Queen)  -> " ♕ "
+    (White, King)   -> " ♔ "
+
+boardToTable :: Board -> Table Name
+boardToTable (Board board) =
+    setDefaultColAlignment AlignCenter $
+    setDefaultRowAlignment AlignMiddle $
+    table (map (\row -> map (txt . drawSquare) row) board)
+
+drawBoardTable :: St -> Widget Name 
+drawBoardTable st = renderTable (boardToTable (gameBoard (st ^. stGame)))
+
+drawFancyBoard :: St -> Widget Name
+drawFancyBoard st = ranks
+                <+> (files <=> drawBoardTable st <=> files)
+                <+> ranks
+                <=> drawGameMessage (st ^. stGame)
+
+drawGameMessage :: Game -> Widget Name
+drawGameMessage (Game _ color gameState _) = 
+    let turnStr = "Turn: " ++ show color
+        message = case gameState of
+            Checkmate -> "Checkmate. " ++ show (toggleColor color) ++ " wins"
+            Stalemate -> "Stalemate. Game Over"
+            Check -> turnStr ++ " (Check)"
+            Normal -> turnStr
+    in str $ '\n':message
+
+noBorders :: Table Name -> Table Name
+noBorders tbl = surroundingBorder False $ rowBorders False $ columnBorders False tbl
+
+-- TODO: Make this not take up so many lines
+ranks :: Widget Name
+ranks = renderTable (noBorders $
+    table [ [txt "   "]
+          , [txt "   "]
+          , [txt " 8 "]
+          , [txt "   "]
+          , [txt " 7 "]
+          , [txt "   "]
+          , [txt " 6 "]
+          , [txt "   "]
+          , [txt " 5 "]
+          , [txt "   "]
+          , [txt " 4 "]
+          , [txt "   "]
+          , [txt " 3 "]
+          , [txt "   "]
+          , [txt " 2 "]
+          , [txt "   "]
+          , [txt " 1 "] ])
+
+files :: Widget Name
+files = renderTable (noBorders $
+    table [map txt ["  a ", "  b ", "  c ", "  d ", "  e ", "  f ", "  g ", "  h "]])

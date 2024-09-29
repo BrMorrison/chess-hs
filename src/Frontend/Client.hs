@@ -1,6 +1,6 @@
 
 -- This module contains the code for interfacing with the backend/server
-module Frontend.Client (evalCmd, drawGame) where
+module Frontend.Client (evalCmd) where
 
 import Control.Monad.Trans.State
 
@@ -57,44 +57,3 @@ evalCmd ("help": _) = return helpMsg
 evalCmd ("robot": _) = handleRobot
 evalCmd (cmd:_) = return $ "Unrecognized command: " ++ cmd
 evalCmd [] = return ""
-
-------------------------------
--- Drawing functions
-------------------------------
-
-showSquare :: BoardSquare -> String
-showSquare Empty = "."
-showSquare (Occ (Piece c t)) = case (c, t) of
-    (Black, Pawn)   -> "p"
-    (Black, Rook)   -> "r"
-    (Black, Knight) -> "n"
-    (Black, Bishop) -> "b"
-    (Black, Queen)  -> "q"
-    (Black, King)   -> "k"
-    (White, Pawn)   -> "P"
-    (White, Rook)   -> "R"
-    (White, Knight) -> "N"
-    (White, Bishop) -> "B"
-    (White, Queen)  -> "Q"
-    (White, King)   -> "K"
-
-drawBoardLine :: [BoardSquare] -> String
-drawBoardLine line = foldl (\str square -> str ++ showSquare square ++ " ") "| " line ++ "|"
-
-drawBoard :: Board -> String
-drawBoard (Board board) = unlines
-    ([ "    a b c d e f g h"
-    , "  +-----------------+"]
-    ++ map (\(i :: Integer, row) -> let n = show (8 - i) in
-        n ++ " " ++ drawBoardLine row ++ " " ++ n) (enumerate board)
-    ++ ["  +-----------------+", "    a b c d e f g h"])
-
-drawGame :: Game -> String
-drawGame (Game board color gameState _) = 
-    let turnStr = "Turn: " ++ show color
-        message = case gameState of
-            Checkmate -> "Checkmate. " ++ show (toggleColor color) ++ " wins"
-            Stalemate -> "Stalemate. Game Over"
-            Check -> turnStr ++ " (Check)"
-            Normal -> turnStr
-    in drawBoard board ++ message ++ "\n"
