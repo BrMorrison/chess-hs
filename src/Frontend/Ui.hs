@@ -18,7 +18,8 @@ import Data.Text (Text)
 
 import Types
 import Frontend.Client (evalCmd)
-import Backend.Interface (newGame)
+import Backend.Interface (newGame, getPastMoves)
+import Util (encodeCoord, enumerate)
 
 newtype Name = Name ()
     deriving(Eq, Ord, Show)
@@ -35,17 +36,18 @@ drawEditor width st =
     in (str ">" <+> hLimit (width-1) e)
 
 drawMessage :: Int -> St -> Widget Name
-drawMessage width st = hLimit width $ vBox [fill ' ', (str (st ^. stMsg))]
+drawMessage width st = hLimit width $ vBox [fill ' ', str (st ^. stMsg)]
 
 draw :: St -> [Widget Name]
 draw st = [ui]
     where
+        -- TODO: Cleanup magic numbers
         widgetEffects = hCenter . border -- Include the border for debugging
-        textArea width = vLimit 10 (drawMessage width st
+        textArea width = vLimit 8 (drawMessage width st
             <=> drawEditor width st)
-        ui = center $ widgetEffects (drawFancyBoard st)
-            <=> str " " 
-            <=> widgetEffects (textArea 75)
+        gameArea = vLimit 21 (drawFancyBoard st <+> vBorder <+> drawMoves 40 st)
+        ui = center $ widgetEffects gameArea
+            <=> widgetEffects (textArea 80)
 
 -- Send the commands to the editor that should clear it
 -- Note: I don't understand lenses well enough to really get how this works.
@@ -121,7 +123,7 @@ boardToTable :: Board -> Table Name
 boardToTable (Board board) =
     setDefaultColAlignment AlignCenter $
     setDefaultRowAlignment AlignMiddle $
-    table (map (\row -> map (txt . drawSquare) row) board)
+    table (map (map (txt . drawSquare)) board)
 
 drawBoardTable :: St -> Widget Name 
 drawBoardTable st = renderTable (boardToTable (gameBoard (st ^. stGame)))
@@ -169,3 +171,43 @@ ranks = renderTable (noBorders $
 files :: Widget Name
 files = renderTable (noBorders $
     table [map txt ["  a ", "  b ", "  c ", "  d ", "  e ", "  f ", "  g ", "  h "]])
+
+pieceChar :: PieceType -> Char
+pieceChar Pawn = 'P'
+pieceChar Rook = 'R'
+pieceChar Knight = 'N'
+pieceChar Bishop = 'B'
+pieceChar Queen = 'Q'
+pieceChar King = 'K'
+
+gameMoveString :: GameMove -> String
+gameMoveString move = concat [piece, orig, capture, dest, promotion, st, annotation]
+    where
+        piece = [pieceChar (gameMovePiece move)]
+        orig = (encodeCoord . moveOrig . gameMoveMove) move
+        capture = if gameMoveCapture move then "x" else ""
+        dest = (encodeCoord . moveDest . gameMoveMove) move
+        promotion = maybe "" (\p -> [pieceChar p]) (gameMovePromotion move)
+        st = case gameMoveState move of
+            Normal -> ""
+            Check -> "+"
+            Checkmate -> "#"
+            Stalemate -> "="
+        annotation = case gameMoveAnnotation move of
+            Nothing -> ""
+            Just Brilliant -> "!!"
+            Just Good -> "!"
+            Just Bad -> "?"
+            Just Blunder -> "??"
+
+gameMovesString :: St -> String
+gameMovesString st =
+    let moves = reverse $ getPastMoves (st ^. stGame)
+        moveStrings = map gameMoveString moves
+    -- TODO: we're currently counting moves wrong since one move is both white and black
+    in unwords $ map (\(num :: Integer, move) -> show (num+1) ++ '.':move) (enumerate moveStrings)
+
+drawMoves :: Int -> St -> Widget Name
+drawMoves width st = hLimit width $ hCenter (str "Moves")
+            <=> hBorder
+            <=> strWrap (gameMovesString st)
