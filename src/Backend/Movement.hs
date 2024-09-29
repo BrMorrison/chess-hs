@@ -138,11 +138,11 @@ makeMove move game =
         nextColor = toggleColor color
         board = gameBoard game
         destValid = moveDest move `elem` validMovesAt board (moveOrig move)
-        isCapture = enemyCollisionAt board color (moveOrig move)
+        isCapture = enemyCollisionAt board color (moveDest move)
         moveHelper piece =
             let isRightColor = pieceColor piece == color
                 isPromotion = isMovePawnPromotion piece move
-                nextBoard = movePiece piece move board
+                nextBoard = movePiece (if isPromotion then Piece color Queen else piece) move board
                 nextState = checkGameState nextColor nextBoard
                 gameMove = GameMove { gameMovePiece = pieceType piece
                                     , gameMoveCapture = isCapture
