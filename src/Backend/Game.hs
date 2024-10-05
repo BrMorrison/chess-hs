@@ -7,11 +7,6 @@ import Util
 -- Type Definitions
 ------------------------------
 
-
-commitMove :: GameMove -> Board -> GameState -> Game -> Game
-commitMove move nextBoard nextState (Game _ turn _ moves) = 
-    Game nextBoard (toggleColor turn) nextState (move:moves)
-
 gameOver :: Game -> Bool
 gameOver game = case gameState game of
     Checkmate -> True

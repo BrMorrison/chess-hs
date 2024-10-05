@@ -12,18 +12,7 @@ data PieceType = Pawn | Rook | Knight | Bishop | Queen | King
 data Piece = Piece Color PieceType
     deriving(Eq, Show)
 
--- GameMove captures everything that's needed for a single move in algebraic notation.
 data Move = Move Position Position
-    deriving(Eq, Show)
-data Annotation = Brilliant | Good | Bad | Blunder
-    deriving(Eq, Show)
-data GameMove = GameMove 
-    { gameMovePiece      :: PieceType
-    , gameMoveCapture    :: Bool
-    , gameMoveMove       :: Move
-    , gameMovePromotion  :: Maybe PieceType
-    , gameMoveState      :: GameState
-    , gameMoveAnnotation :: Maybe Annotation }
     deriving(Eq, Show)
 
 -- BoardSquare and Board are used to represent the board of the game
@@ -37,9 +26,9 @@ newtype Board = Board [[BoardSquare]]
 data GameState = Normal | Check | Checkmate | Stalemate
     deriving(Eq, Show)
 data Game = Game { gameBoard :: Board
-                 , gameTurn :: Color
+                 , gameTurn  :: Color
                  , gameState :: GameState 
-                 , gameMoves :: [GameMove] }
+                 , gameMoves :: [Move] }
     deriving(Eq, Show)
 
 pieceColor :: Piece -> Color

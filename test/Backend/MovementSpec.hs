@@ -35,7 +35,7 @@ data ValidMovesAtTestCase = ValidMovesAtTestCase
 
 checkValidMoveAtCase :: ValidMovesAtTestCase -> Expectation
 checkValidMoveAtCase (ValidMovesAtTestCase board pos expected) = 
-    sort (validMovesAt board pos) `shouldBe` sort expected
+    sort (contextFreeValidMovesAt board pos) `shouldBe` sort expected
 
 validMovesAtSpec :: Spec
 validMovesAtSpec = do
@@ -413,7 +413,7 @@ data CheckGameStateTestCase = CheckGameStateTestCase
 
 checkCheckGameStateCase :: CheckGameStateTestCase -> Expectation
 checkCheckGameStateCase (CheckGameStateTestCase board color expected) = 
-    checkGameState color board `shouldBe` expected
+    checkGameState (Game board color Normal []) `shouldBe` expected
 
 checkmateTestCase :: CheckGameStateTestCase
 checkmateTestCase = CheckGameStateTestCase
@@ -518,14 +518,6 @@ makeMoveTestBoard = Board
 whitePawnCaptureToPromoteAndCheckTestCase :: MakeMoveTestCase
 whitePawnCaptureToPromoteAndCheckTestCase = let
     testMove = Move (Vec2 0 1) (Vec2 1 0)
-    expectedGameMove = GameMove
-        { gameMovePiece      = Pawn
-        , gameMoveCapture    = True
-        , gameMoveMove       = testMove
-        , gameMovePromotion  = Just Queen
-        , gameMoveState      = Check
-        , gameMoveAnnotation = Nothing
-        }
     in MakeMoveTestCase
         { mmTestGame = Game 
             { gameBoard = makeMoveTestBoard
@@ -537,7 +529,7 @@ whitePawnCaptureToPromoteAndCheckTestCase = let
         , mmExpected = Just $ Game
             { gameBoard = movePiece wq testMove makeMoveTestBoard
             , gameTurn  = Black
-            , gameMoves = [expectedGameMove]
+            , gameMoves = [testMove]
             , gameState = Check
             }
         }
@@ -545,14 +537,6 @@ whitePawnCaptureToPromoteAndCheckTestCase = let
 blackPawnPromoteTestCase :: MakeMoveTestCase
 blackPawnPromoteTestCase = let
     testMove = Move (Vec2 0 6) (Vec2 0 7)
-    expectedGameMove = GameMove
-        { gameMovePiece      = Pawn
-        , gameMoveCapture    = False
-        , gameMoveMove       = testMove
-        , gameMovePromotion  = Just Queen
-        , gameMoveState      = Normal
-        , gameMoveAnnotation = Nothing
-        }
     in MakeMoveTestCase
         { mmTestGame = Game 
             { gameBoard = makeMoveTestBoard
@@ -564,7 +548,7 @@ blackPawnPromoteTestCase = let
         , mmExpected = Just $ Game
             { gameBoard = movePiece bq testMove makeMoveTestBoard
             , gameTurn  = White
-            , gameMoves = [expectedGameMove]
+            , gameMoves = [testMove]
             , gameState = Normal
             }
         }

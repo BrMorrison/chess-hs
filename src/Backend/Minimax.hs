@@ -72,12 +72,11 @@ scoreBoard' :: Board -> Double
 scoreBoard' board = 0.9 * materialScore board
                   + 0.1 * positionScore board
 
-scoreBoard :: Board -> Double
-scoreBoard board
-    | inCheckmate Black board = 1.0
-    | inCheckmate White board = -1.0
-    | inStalemate Black board || inStalemate White board = 0.0
-    | otherwise = scoreBoard' board 
+scoreBoard :: Game -> Double
+scoreBoard game = case checkGameState game of
+    Checkmate -> if gameTurn game == Black then 1.0 else -1.0
+    Stalemate -> 0.0
+    _ -> scoreBoard' (gameBoard game) 
 
 getBestScore :: Color -> [Double] -> Double
 getBestScore White = foldl max (-1.0)
@@ -85,19 +84,17 @@ getBestScore Black = foldl min 1.0
 
 -- TODO: We should have this return a tree or something so that we don't need to recalculate it each time.
 miniMax' :: Int -> Game -> (Maybe Move, Double)
-miniMax' 0 game = (Nothing, scoreBoard (gameBoard game))
+miniMax' 0 game = (Nothing, scoreBoard game)
 miniMax' fuel game =
-    let color = gameTurn game
-        board = gameBoard game
-        moves = allPossibleMoves color board
+    let moves = allPossibleMoves game
         nextGame move = fromJust (makeMove move game)
         nextMiniMaxScore = snd . miniMax' (fuel-1)
         moveScores = map (\move -> (move, nextMiniMaxScore (nextGame move))) moves
-        bestScore = getBestScore color (map snd moveScores)
+        bestScore = getBestScore (gameTurn game) (map snd moveScores)
         -- Ideally, we'd pick one of the valid moves randomly instead of just grabbing the first one
         bestMove = fst . head $ filter ((== bestScore) . snd) moveScores
     in case moves of
-        [] -> (Nothing, scoreBoard board) -- Handle the case where we don't have moves available
+        [] -> (Nothing, scoreBoard game) -- Handle the case where we don't have moves available
         _ -> (Just bestMove, bestScore * 0.999) -- The * 0.999 is so that we favor shorter trees
 
 miniMax :: Game -> (Maybe Move, Double)

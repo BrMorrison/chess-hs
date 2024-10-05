@@ -31,7 +31,7 @@ handleRobot = do
 
 printOptions' :: Position -> State Game String
 printOptions' pos =
-    let moves game = validMovesAt (gameBoard game) pos
+    let moves game = validMovesAt game pos
     in (\coords -> "[" ++ unwords coords ++ "]" ) . map encodeCoord . moves <$> get
 
 printOptions :: [String] -> State Game String

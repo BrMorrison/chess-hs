@@ -172,33 +172,47 @@ files :: Widget Name
 files = renderTable (noBorders $
     table [map txt ["  a ", "  b ", "  c ", "  d ", "  e ", "  f ", "  g ", "  h "]])
 
-pieceChar :: PieceType -> Char
-pieceChar Pawn = 'P'
-pieceChar Rook = 'R'
-pieceChar Knight = 'N'
-pieceChar Bishop = 'B'
-pieceChar Queen = 'Q'
-pieceChar King = 'K'
+-- TODO: Bring this back when you want to improve the printing
+-- pieceChar :: PieceType -> Char
+-- pieceChar Pawn = 'P'
+-- pieceChar Rook = 'R'
+-- pieceChar Knight = 'N'
+-- pieceChar Bishop = 'B'
+-- pieceChar Queen = 'Q'
+-- pieceChar King = 'K'
+-- data Annotation = Brilliant | Good | Bad | Blunder
+--     deriving(Eq, Show)
+-- data GameMove = GameMove 
+--     { gameMovePiece      :: PieceType
+--     , gameMoveCapture    :: Bool
+--     , gameMoveMove       :: Move
+--     , gameMovePromotion  :: Maybe PieceType
+--     , gameMoveState      :: GameState
+--     , gameMoveAnnotation :: Maybe Annotation }
+--     deriving(Eq, Show)
+-- gameMoveString :: GameMove -> String
+-- gameMoveString move = concat [piece, orig, capture, dest, promotion, st, annotation]
+--     where
+--         piece = [pieceChar (gameMovePiece move)]
+--         orig = (encodeCoord . moveOrig . gameMoveMove) move
+--         capture = if gameMoveCapture move then "x" else ""
+--         dest = (encodeCoord . moveDest . gameMoveMove) move
+--         promotion = maybe "" (\p -> [pieceChar p]) (gameMovePromotion move)
+--         st = case gameMoveState move of
+--             Normal -> ""
+--             Check -> "+"
+--             Checkmate -> "#"
+--             Stalemate -> "="
+--         annotation = case gameMoveAnnotation move of
+--             Nothing -> ""
+--             Just Brilliant -> "!!"
+--             Just Good -> "!"
+--             Just Bad -> "?"
+--             Just Blunder -> "??"
 
-gameMoveString :: GameMove -> String
-gameMoveString move = concat [piece, orig, capture, dest, promotion, st, annotation]
-    where
-        piece = [pieceChar (gameMovePiece move)]
-        orig = (encodeCoord . moveOrig . gameMoveMove) move
-        capture = if gameMoveCapture move then "x" else ""
-        dest = (encodeCoord . moveDest . gameMoveMove) move
-        promotion = maybe "" (\p -> [pieceChar p]) (gameMovePromotion move)
-        st = case gameMoveState move of
-            Normal -> ""
-            Check -> "+"
-            Checkmate -> "#"
-            Stalemate -> "="
-        annotation = case gameMoveAnnotation move of
-            Nothing -> ""
-            Just Brilliant -> "!!"
-            Just Good -> "!"
-            Just Bad -> "?"
-            Just Blunder -> "??"
+-- This is a temp while the above is under construction
+gameMoveString :: Move -> String
+gameMoveString move = concatMap encodeCoord [moveOrig move, moveDest move]
 
 gameMovesString :: St -> String
 gameMovesString st =
