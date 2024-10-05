@@ -18,10 +18,10 @@ handleMove' move = do
 handleMove :: [String] -> State Game String
 handleMove [arg1, arg2] = 
     case (decodeCoord arg1, decodeCoord arg2) of
-        (Nothing, _) -> state ("Invalid coordinate: " ++ arg1,)
-        (_, Nothing) -> state ("Invalid coordinate: " ++ arg2,)
+        (Nothing, _) -> state (\game -> ("Invalid coordinate: " ++ arg1, game))
+        (_, Nothing) -> state (\game -> ("Invalid coordinate: " ++ arg2, game))
         (Just p1, Just p2) -> handleMove' (Move p1 p2)
-handleMove _ = state ("Usage: move <pos1> <pos2>\n  (ex: move a1 b2)", )
+handleMove _ = state (\game -> ("Usage: move <pos1> <pos2>\n  (ex: move a1 b2)", game))
 
 handleRobot :: State Game String
 handleRobot = do

@@ -5,6 +5,7 @@ module Backend.Interface
     , validMovesAt
     ) where
 
+import Data.Maybe (fromMaybe)
 import Types
 import Backend.Game (initGame)
 import Backend.Movement (allPossibleMoves, makeMove, validMovesAt)
@@ -28,8 +29,8 @@ getPastMoves = gameMoves
 -- gameProbability :: ChessGame -> Double
 
 robotMove :: Game -> Game
-robotMove game = maybe 
+robotMove game = fromMaybe
     (error "The AI couldn't find any valid moves.")
-    id $ do
+    $ do
         move <- (fst . miniMax) game
         makeMove move game

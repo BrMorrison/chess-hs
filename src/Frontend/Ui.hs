@@ -135,9 +135,9 @@ drawFancyBoard st = ranks
                 <=> drawGameMessage (st ^. stGame)
 
 drawGameMessage :: Game -> Widget Name
-drawGameMessage (Game _ color gameState _) = 
+drawGameMessage (Game _ color gs _) =
     let turnStr = "Turn: " ++ show color
-        message = case gameState of
+        message = case gs of
             Checkmate -> "Checkmate. " ++ show (toggleColor color) ++ " wins"
             Stalemate -> "Stalemate. Game Over"
             Check -> turnStr ++ " (Check)"
@@ -205,7 +205,7 @@ gameMovesString st =
     let moves = reverse $ getPastMoves (st ^. stGame)
         moveStrings = map gameMoveString moves
     -- TODO: we're currently counting moves wrong since one move is both white and black
-    in unwords $ map (\(num :: Integer, move) -> show (num+1) ++ '.':move) (enumerate moveStrings)
+    in unwords $ map (\(num, move) -> show (num+1 :: Int) ++ '.':move) (enumerate moveStrings)
 
 drawMoves :: Int -> St -> Widget Name
 drawMoves width st = hLimit width $ hCenter (str "Moves")

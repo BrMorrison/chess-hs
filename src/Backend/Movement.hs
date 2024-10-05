@@ -3,7 +3,6 @@
 module Backend.Movement
     ( validMovesAt
     , moveValid
-    , inCheck
     , inCheckmate
     , inStalemate
     , checkGameState
