@@ -107,10 +107,19 @@ executable chess
 
 test-suite chess-test
     type:               exitcode-stdio-1.0
+
+    import:             warnings
+
     hs-source-dirs:     test
                         , src
+
     main-is:            Spec.hs
-    build-depends:      chess-backend, base, hspec
+
+    build-depends:      chess-backend
+                        , base
+                        , hspec
+                        , containers
+
     other-modules:      Backend.MovementSpec
                         , Types
                         , Util
@@ -118,4 +127,5 @@ test-suite chess-test
                         , Backend.Game
                         , Backend.Movement
                         , Backend.Minimax
+
     default-language:   Haskell2010

@@ -93,14 +93,17 @@ wq = Piece White Queen
 wk :: Piece
 wk = Piece White King
 
+emptyTiles :: Int -> [BoardSquare]
+emptyTiles x = take x $ map (const Empty) [1 ::Integer ..]
+
 startingBoard :: Board
 startingBoard = Board [
     map Occ [br, bn, bb, bq, bk, bb, bn, br],
     map Occ [bp, bp, bp, bp, bp, bp, bp, bp],
-    map (const Empty) [1 ::Integer .. 8],
-    map (const Empty) [1 ::Integer .. 8],
-    map (const Empty) [1 ::Integer .. 8],
-    map (const Empty) [1 ::Integer .. 8],
+    emptyTiles 8,
+    emptyTiles 8,
+    emptyTiles 8,
+    emptyTiles 8,
     map Occ [wp, wp, wp, wp, wp, wp, wp, wp],
     map Occ [wr, wn, wb, wq, wk, wb, wn, wr]]
 

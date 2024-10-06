@@ -166,7 +166,13 @@ tmpToGame color board = Game board color Normal []
 
 inCheck :: Color -> Board -> Bool
 inCheck color board =
-    let kingPos = fromJust $ pieceLocation board (Piece color King)
+    let kingPos = fromMaybe 
+            {- In normal gameplay, there should always be a king of each color, but that's not true
+             - for some of the tests. For this reason, if we can't find a king, we set the king's
+             - position to be (8, 8), which is off the board, so guaranteed to be out of check.
+             -}
+            (Vec2 8 8)
+            (pieceLocation board (Piece color King))
         enemyPieceLocations = colorPieceLocations board (toggleColor color)
         -- Note, we use validMovesAt' because it doesn't include the check check.
         enemyMoves = foldl (\moves pos -> moves ++ validMovesAt' board pos) [] enemyPieceLocations
@@ -176,9 +182,7 @@ inCheckmate :: Color -> Board -> Bool
 inCheckmate color board = inCheck color board && all (inCheck color) (possibleNextBoards (tmpToGame color board))
 
 inStalemate :: Color -> Board -> Bool
-inStalemate color board = case allPossibleMoves color board of
-    [] -> True
-    _ -> False
+inStalemate color board = null $ allPossibleMoves color board
 
 checkGameState :: Color -> Board -> GameState
 checkGameState nextColor board =

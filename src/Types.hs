@@ -2,7 +2,7 @@ module Types where
 
 -- Type for representing 2D directions and positions on the board.
 data Vec2 = Vec2 Int Int
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 type Position = Vec2
 
 data Color = Black | White
@@ -14,7 +14,9 @@ data Piece = Piece Color PieceType
 
 -- GameMove captures everything that's needed for a single move in algebraic notation.
 data Move = Move Position Position
+    deriving(Eq, Show)
 data Annotation = Brilliant | Good | Bad | Blunder
+    deriving(Eq, Show)
 data GameMove = GameMove 
     { gameMovePiece      :: PieceType
     , gameMoveCapture    :: Bool
