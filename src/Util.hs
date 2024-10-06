@@ -8,6 +8,17 @@ import Types
 (Vec2 x1 y1) |+| (Vec2 x2 y2) = Vec2 (x1 + x2) (y1 + y2)
 (|-|) :: Vec2 -> Vec2 -> Vec2
 (Vec2 x1 y1) |-| (Vec2 x2 y2) = Vec2 (x1 - x2) (y1 - y2)
+(|*|) :: Int -> Vec2 -> Vec2
+s |*| (Vec2 x y) = Vec2 (s * x) (s * y)
+
+upDirection :: Vec2
+upDirection = Vec2 0 (-1)
+downDirection :: Vec2
+downDirection = Vec2 0 1
+leftDirection :: Vec2
+leftDirection = Vec2 (-1) 0
+rightDirection :: Vec2
+rightDirection = Vec2 1 0
 
 getX :: Vec2 -> Int
 getX (Vec2 x _) = x
