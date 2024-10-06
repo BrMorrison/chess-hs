@@ -24,18 +24,23 @@ data GameMove = GameMove
     , gameMovePromotion  :: Maybe PieceType
     , gameMoveState      :: GameState
     , gameMoveAnnotation :: Maybe Annotation }
+    deriving(Eq, Show)
 
 -- BoardSquare and Board are used to represent the board of the game
 -- Note: These should be optimized in the future to be more efficient.
 data BoardSquare = Empty | Occ Piece
+    deriving(Eq, Show)
 newtype Board = Board [[BoardSquare]]
+    deriving(Eq, Show)
 
 -- Game should represent everything needed to represent a game of chess
 data GameState = Normal | Check | Checkmate | Stalemate
+    deriving(Eq, Show)
 data Game = Game { gameBoard :: Board
                  , gameTurn :: Color
                  , gameState :: GameState 
                  , gameMoves :: [GameMove] }
+    deriving(Eq, Show)
 
 pieceColor :: Piece -> Color
 pieceColor (Piece c _) = c

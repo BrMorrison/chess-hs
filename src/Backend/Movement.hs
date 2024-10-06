@@ -1,5 +1,3 @@
--- TODO: validMovesAt, moveValid, and allPossiblesMoves are all related.
---       we can probably simplify down and shrink our API
 module Backend.Movement
     ( validMovesAt
     , moveValid
