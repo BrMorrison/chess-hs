@@ -118,7 +118,6 @@ test-suite chess-test
     build-depends:      chess-backend
                         , base
                         , hspec
-                        , containers
 
     other-modules:      Backend.MovementSpec
                         , Types

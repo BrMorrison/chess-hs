@@ -2,7 +2,7 @@ module Backend.MovementSpec (spec) where
 
 import Test.Hspec
 
-import Data.Set (Set, fromList)
+import Data.List (sort)
 
 import Types
 import Util
@@ -31,11 +31,11 @@ checkmateBoard = Board [
 data MovementTestCase = MovementTestCase
     { testBoard :: Board
     , testPos :: Position
-    , expectedMoves :: Set Position
+    , expectedMoves :: [Position]
     }
 
 checkMovementCase (MovementTestCase board pos expected) = 
-    fromList (validMovesAt board pos) `shouldBe` expected
+    sort (validMovesAt board pos) `shouldBe` sort expected
 
 setBoard' :: Piece -> Position -> Board -> Board
 setBoard' piece pos board = setBoardAt board pos (Occ piece)
@@ -54,7 +54,7 @@ rookBasicCase = let
     , expectedMoves = let 
             horizontalMoves = map (\x -> Vec2 x 4) [0, 1, 2, 3, 5, 6, 7]
             verticalMoves = map (\y -> Vec2 4 y) [0, 1, 2, 3, 5, 6, 7]
-        in fromList (horizontalMoves ++ verticalMoves)
+        in horizontalMoves ++ verticalMoves
     }
 
 -- Ensure the rook can't move past friends and can capture enemies.
@@ -73,7 +73,7 @@ rookCollisionCase = let
     , expectedMoves = let
         horizontalMoves = map (\x -> Vec2 x 4) [0, 1, 2, 3, 5, 6, 7]
         verticalMoves = map (\y -> Vec2 4 y) [3, 5, 6]
-        in fromList (horizontalMoves ++ verticalMoves)
+        in horizontalMoves ++ verticalMoves
     }
 
 rookMovementSpec :: Spec
@@ -98,7 +98,7 @@ bishopBasicCase = let
     , expectedMoves = let 
             diagonal1Moves = map (\x -> Vec2 x x) [0, 1, 2, 3, 5, 6, 7]
             diagonal2Moves = map (\x -> Vec2 (x+1) (7-x)) [0, 1, 2, 4, 5, 6]
-        in fromList (diagonal1Moves ++ diagonal2Moves)
+        in diagonal1Moves ++ diagonal2Moves
     }
 
 -- Ensure the bishop can't move past friends and can capture enemies.
@@ -117,7 +117,7 @@ bishopCollisionCase = let
     , expectedMoves = let
         diagonal1Moves = map (\x -> Vec2 x x) [3, 5, 6]
         diagonal2Moves = map (\x -> Vec2 (x+1) (7-x)) [0, 1, 2, 4, 5, 6]
-        in fromList (diagonal1Moves ++ diagonal2Moves)
+        in diagonal1Moves ++ diagonal2Moves
     }
 
 bishopMovementSpec :: Spec
